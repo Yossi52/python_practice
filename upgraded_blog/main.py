@@ -1,5 +1,13 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 import requests
+import smtplib
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+EMAIL = os.getenv("EMAIL")
+PASSWORD = os.getenv("PASSWORD")
 
 app = Flask(__name__)
 
@@ -17,9 +25,28 @@ def about_page():
     return render_template("about.html")
 
 
-@app.route('/contact')
+@app.route('/contact', methods=["GET", "POST"])
 def contact_page():
-    return render_template("contact.html")
+    if request.method == 'POST':
+        name = request.form["name"]
+        email = request.form["email"]
+        phone = request.form["phone"]
+        message = request.form["message"]
+        with smtplib.SMTP("smtp.gmail.com", port=587) as connection:
+            connection.starttls()
+            connection.login(user=EMAIL, password=PASSWORD)
+            connection.sendmail(
+                from_addr=EMAIL,
+                to_addrs=EMAIL,
+                msg=f"Subject:Blog Question!\n\n"
+                    f"Name: {name}\n"
+                    f"email: {email}\n"
+                    f"Phone: {phone}\n"
+                    f"Message: {message}".encode("utf-8")
+            )
+        return render_template("contact.html", msg_sent=True)
+
+    return render_template("contact.html", msg_sent=False)
 
 
 @app.route('/post/<int:post_id>')
